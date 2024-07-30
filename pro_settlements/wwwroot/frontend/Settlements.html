@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta SettlementName="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settlements</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f7f7f7;
+        }
+
+        h1 {
+            color: rgb(10, 10, 101);
+        }
+
+        .btn-custom {
+            background-color: #ff03a3;
+            color: white;
+            border-radius: 20px;
+            border: none;
+        }
+
+        .btn-custom:hover {
+            background-color: rgb(10, 10, 101);
+            color: white;
+        }
+
+        .btn-danger-custom {
+            background-color: rgb(10, 10, 101);
+            color: white;
+            border: none;
+        }
+
+        .btn-danger-custom:hover {
+            background-color: rgb(10, 10, 101);
+            color: white;
+        }
+
+        .table {
+            background-color: white;
+        }
+
+        .modal-header {
+            background-color: rgb(10, 10, 101);
+            color: white;
+        }
+
+        .pagination .page-item .page-link {
+            color: rgb(10, 10, 101);
+        }
+
+        .pagination .page-item.active .page-link {
+            background-color: rgb(10, 10, 101);
+            border-color: rgb(10, 10, 101);
+        }
+
+        .mt-custom {
+            margin-top: 50px;
+        }
+
+        .pagination .page-item {
+            margin: 0 5px;
+        }
+    </style>
+</head>
+
+<body dir="rtl">
+    <div class="container mt-custom">
+        <h1 class="mt-4" dir="rtl" style="text-align: right;">מערכת ניהול ישובים</h1>
+
+        <div class="mb-3">
+            <input type="text" id="searchInput" class="form-control" placeholder="חפש ישוב...">
+        </div>
+        <button class="btn btn-custom mb-3" onclick="fetchSettlements()">חיפוש</button>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>
+                        <a href="#" onclick="sortTable('SettlementName', 'asc')">up</a>
+                        <a href="#" onclick="sortTable('SettlementName', 'desc')">down</a>
+                    </th>
+                   <!-- <th>Actions</th> -->
+                </tr>
+            </thead>
+            <tbody id="settlementsTableBody">
+                <!-- Rows will be dynamically added here -->
+            </tbody>
+        </table>
+        <nav>
+            <ul class="pagination">
+                <li class="page-item"><a class="page-link" href="#" onclick="prevPage()"><< הקודם</a></li>
+                <li class="page-item"><a class="page-link" href="#" onclick="nextPage()">הבא >></a></li>
+            </ul>
+        </nav>
+
+        <!-- Edit Modal -->
+        <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="editModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="editModalLabel">עריכת ישוב</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="editForm">
+                            <input type="hidden" id="editSettlementId">
+                            <div class="form-group">
+                                <label for="editSettlementSettlementName">עדכן שם</label>
+                                <input type="text" class="form-control" id="editSettlementSettlementName" required>
+                                <div id="error-message" class="text-danger mt-2"></div>
+                            </div>
+                            <button type="submit" class="btn btn-custom">שמירת שינויים</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Modal -->
+        <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="addModalLabel">הוספת ישוב חדש</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="addForm">
+                            <div class="form-group">
+                                <label for="addSettlementSettlementName">שם הישוב</label>
+                                <input type="text" class="form-control" id="addSettlementSettlementName" required>
+                                <div id="add-error-message" class="text-danger mt-2"></div>
+                            </div>
+                            <button type="submit" class="btn btn-custom">הוסף ישוב</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="deleteModalLabel">אשר מחיקה</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        האם אתה בטוח שברצונך למחוק?פעולה זו בילתי הפיכה
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">ביטול</button>
+                        <button type="button" class="btn btn-danger-custom" id="confirmDeleteButton">מחיקה</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="d-flex justify-content-center mb-3">
+        <button class="btn btn-custom" onclick="openAddModal()">הוספת ישוב חדש</button>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script>
+   //     const apiBaseUrl = "http://localhost:7221/api/Settlements";
+
+        let currentPage = 1;
+        let deleteId = null;
+        let sortDirection = 'asc';
+
+        async function fetchSettlements(direction = 'asc') {
+    try {
+        
+        const searchInput = document.getElementById('searchInput').value;
+     
+        const data = await getSettlement(searchInput, currentPage);
+      
+        const tableBody = document.getElementById('settlementsTableBody');
+        tableBody.innerHTML = '';
+     
+        if (data != null) {
+            data.sort((a, b) => {
+                if (direction === 'asc') {
+                    return a.settlementName.localeCompare(b.settlementName);
+                } else {
+                    return b.settlementName.localeCompare(a.settlementName);
+                }
+            });
+
+            data.forEach(settlement => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${settlement.settlementName}</td>
+                    <td>
+                        
+                        <button class="btn btn-outline-info" onclick="openEditModal(${settlement.id})">עריכה</button>
+                        <button class="btn btn-outline-info" onclick="openDeleteModal(${settlement.id})">מחיקה</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+    } catch (error) {
+        console.error('Error fetching settlements:', error);
+    }
+}
+
+        function sortTable(sortBy, direction) {
+            sortDirection = direction;
+            fetchSettlements(direction);
+        }
+
+        function prevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                fetchSettlements();
+            }
+        }
+
+        function nextPage() {
+            currentPage++;
+            fetchSettlements();
+        }
+
+
+        
+function updateTable(data) {
+    const tableBody = document.getElementById('settlementsTableBody');
+    tableBody.innerHTML = '';
+    if(data != null){
+    data.forEach(settlement => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${settlement.name}</td>
+            <td>
+                <button class="btn btn-secondary" onclick="openEditModal(${settlement.id})">Edit</button>
+                <button class="btn btn-danger" onclick="removeSettlement(${settlement.id})">Delete</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+}
+
+async function getSettlement(searchInput ='' , page = 1) {
+
+    const translatedInput=convertEnglishToHebrew(searchInput);
+
+    const response =await fetch(`/api/settlements?page=${page}&search=${translatedInput}`);
+
+    if (!response.ok) {
+        throw new Error('Network response was not ok.');
+    }
+    return await response.json();
+}
+function showModal(message) {
+ 
+    const errorMessageContainer = document.getElementById('error-message');
+    errorMessageContainer.textContent = message;
+    
+    // Show the modal
+    $('#editModal').modal('show');
+}
+async function deleteSettlement(id) {
+    const response = await fetch(`/api/settlements/${id}`, {
+        method: 'DELETE'
+    });
+    if (!response.ok) {
+        throw new Error('Network response was not ok.');
+    }
+}
+
+function close() {
+            $('#editModal').modal('hide');
+            fetchSettlements();
+            const errorMessageContainer = document.getElementById('error-message');
+            if (errorMessageContainer) {
+            errorMessageContainer.textContent = ''; 
+             // מנקה את הודעת השגיאה
+        }
+        }
+
+async function updateSettlement(id, newName) {
+    
+    const response = await fetch(`/api/settlements/${id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        // שלח את השם החדש כ-string בלבד
+        body: JSON.stringify(newName)
+    });
+    if (!response.ok) {
+        if (response.status === 409) {
+            // הצג הודעה מתאימה אם השם כבר קיים
+            showModal('המושב כבר קיים במערכת.');
+        } else {
+            throw new Error('Network response was not ok.');
+        }
+    }
+}
+
+async function addNewSettlement(name) {
+    try {
+        const response = await fetch(`/api/settlements`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(name) // Send the name as a JSON string
+        });
+
+        if (response.status === 409) {
+            const errorMessageContainer = document.getElementById('add-error-message');
+            errorMessageContainer.textContent = 'A settlement with this name already exists.';
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error('Network response was not ok.');
+        }
+    } catch (error) {
+        console.error('Error adding settlement:', error);
+    }
+}
+
+
+        function openEditModal(id, SettlementName) {
+            const modal = document.getElementById('editModal');
+            if (!modal) {
+                console.error('Modal element not found');
+                return;
+            }
+
+            const modalBody = modal.querySelector('.modal-body');
+            const errorMessageContainer = modal.querySelector('#error-message');
+
+            if (!modalBody || !errorMessageContainer) {
+                console.error('Modal body or error message container not found');
+                return;
+            }
+
+            document.getElementById('editSettlementId').value = id;
+            document.getElementById('editSettlementSettlementName').value = '';
+            errorMessageContainer.textContent = '';
+            $('#editModal').modal('show');
+            fetchSettlements();
+        }
+
+        function openAddModal() {
+            document.getElementById('addSettlementSettlementName').value = '';
+            document.getElementById('add-error-message').textContent = '';
+            $('#addModal').modal('show');
+        }
+
+        document.getElementById('addForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('addSettlementSettlementName').value;
+    await addNewSettlement(name);
+    $('#addModal').modal('hide');
+    fetchSettlements();
+});
+
+
+        document.getElementById('editForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('editSettlementId').value;
+            const newName = document.getElementById('editSettlementSettlementName').value;
+            await updateSettlement(id, newName);
+           
+        });
+
+
+        
+        function openDeleteModal(id) {
+            deleteId = id;
+            $('#deleteModal').modal('show');
+        }
+
+
+
+        document.getElementById('confirmDeleteButton').addEventListener('click', async () => {
+            if (deleteId) {
+                await deleteSettlement(deleteId);
+                $('#deleteModal').modal('hide');
+                fetchSettlements();
+            }
+        });
+
+
+
+        function convertEnglishToHebrew(input) {
+    const englishToHebrewMap = {
+        't': 'א', 'c': 'ב', 'd': 'ג', 's': 'ד', 'v': 'ה',
+        'u': 'ו', 'z': 'ז', 'j': 'ח', 'y': 'ט', 'h': 'י',
+        'f': 'כ', 'k': 'ל', 'n': 'מ', 'b': 'נ', 'x': 'ס',
+        'g': 'ע', 'p': 'פ', 'm': 'צ', 'e': 'ק', 'r': 'ר',
+        'a': 'ש', ',': 'ת', 'o': 'ם', 'i': 'ן', 'l': 'ך',
+        '.': 'ף', '/': 'ץ'
+    };
+    return input.split('').map(char => englishToHebrewMap[char] || char).join('');
+}
+
+ 
+
+        fetchSettlements();
+    </script>
+</body>
+
+</html>
